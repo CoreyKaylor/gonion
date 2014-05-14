@@ -15,12 +15,12 @@ type InvocationRegistry struct {
 	Locators []InvokerLocator
 }
 
-func NewInvocationRegistry() InvocationRegistry {
+func NewInvocationRegistry() *InvocationRegistry {
 	registry := InvocationRegistry{make([]InvokerLocator, 0, 10)}
 	registry.AddLocator(InvokeAnythingWithReflectionFallback)
 	registry.AddLocator(InvokeStringArgumentNoReturn)
 	registry.AddLocator(InvokeHttpHandlerFunc)
-	return registry
+	return &registry
 }
 
 func (r *InvocationRegistry) AddLocator(l InvokerLocator) {
