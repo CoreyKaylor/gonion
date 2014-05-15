@@ -60,3 +60,19 @@ func TestBuiltLocators(t *testing.T) {
 		})
 	})
 }
+
+func TestBuildingChain(t *testing.T) {
+	Convey("When building a chain of handlers", t, func() {
+		var result string
+		registry := NewInvocationRegistry()
+		chain := registry.buildInvocationChain(func() {
+			result += "blah"
+		}, func() {
+			result += "blah2"
+		})
+		Convey("The chain will build a composed function executing all handlers in order", func() {
+			chain(httptest.NewRecorder(), new(http.Request))
+			So(result, ShouldEqual, "blahblah2")
+		})
+	})
+}

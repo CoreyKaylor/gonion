@@ -37,6 +37,24 @@ func (r *InvocationRegistry) GetInvoker(h Handler) Invoker {
 	panic("gonion: no invoker found for Handler")
 }
 
+func (r *InvocationRegistry) buildInvocationChain(handlers ...Handler) http.HandlerFunc {
+	firstFunc := r.GetInvoker(handlers[len(handlers)-1])
+	chain := func() {
+		firstFunc()
+	}
+	for i := len(handlers) - 2; i >= 0; i-- {
+		current := r.GetInvoker(handlers[i])
+		currentChain := chain
+		chain = func() {
+			current()
+			currentChain()
+		}
+	}
+	return func(rw http.ResponseWriter, req *http.Request) {
+		chain()
+	}
+}
+
 func InvokeAnythingWithReflectionFallback(h Handler) Invoker {
 	value := reflect.ValueOf(h)
 	handlerType := value.Type()
@@ -58,6 +76,15 @@ func InvokeStringArgumentNoReturn(h Handler) Invoker {
 	if fun, ok := h.(func(arg string)); ok {
 		return func(params ...Arg) {
 			fun(params[0].(string))
+		}
+	}
+	return nil
+}
+
+func InvokeNoArgumentsNoReturn(h Handler) Invoker {
+	if fun, ok := h.(func()); ok {
+		return func(params ...Arg) {
+			fun()
 		}
 	}
 	return nil
