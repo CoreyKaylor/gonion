@@ -55,8 +55,7 @@ func InvokeAnythingWithReflectionFallback(h Handler) Invoker {
 }
 
 func InvokeStringArgumentNoReturn(h Handler) Invoker {
-	switch fun := h.(type) {
-	case func(arg string):
+	if fun, ok := h.(func(arg string)); ok {
 		return func(params ...Arg) {
 			fun(params[0].(string))
 		}
@@ -65,9 +64,7 @@ func InvokeStringArgumentNoReturn(h Handler) Invoker {
 }
 
 func InvokeHttpHandlerFunc(h Handler) Invoker {
-	switch fun := h.(type) {
-	case func(http.ResponseWriter, *http.Request):
-		// case http.HandlerFunc TODO why doesn't this match
+	if fun, ok := h.(func(http.ResponseWriter, *http.Request)); ok {
 		return func(params ...Arg) {
 			fun(params[0].(http.ResponseWriter),
 				params[1].(*http.Request))
