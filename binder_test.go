@@ -11,7 +11,7 @@ import (
 func TestBinding(t *testing.T) {
 	Convey("When binding to a request", t, func() {
 		binder := NewBinder()
-		ctx := &BindingContext{nil, nil, "name", reflect.TypeOf("")}
+		ctx := &BindingContext{nil, nil, nil, "name", reflect.TypeOf("")}
 
 		Convey("Query string parameter can be resolved by the form binder", func() {
 			ctx.req, _ = http.NewRequest("GET", "http://something.com?name=foo", nil)

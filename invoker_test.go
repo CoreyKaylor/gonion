@@ -16,7 +16,7 @@ func TestHandlerInvocation(t *testing.T) {
 				handled = true
 			}
 
-			invoker := registry.GetInvoker(handler)
+			invoker := registry.findInvoker(handler)
 			invoker()
 			So(handled, ShouldBeTrue)
 		})
@@ -25,7 +25,7 @@ func TestHandlerInvocation(t *testing.T) {
 			handler := func(name string) {
 				x = name
 			}
-			invoker := registry.GetInvoker(handler)
+			invoker := registry.findInvoker(handler)
 			invoker("Corey")
 			So(x, ShouldEqual, "Corey")
 		})
@@ -34,12 +34,12 @@ func TestHandlerInvocation(t *testing.T) {
 			handler := func(rw http.ResponseWriter, req *http.Request) {
 				handled = true
 			}
-			invoker := registry.GetInvoker(handler)
+			invoker := registry.findInvoker(handler)
 			invoker(httptest.NewRecorder(), new(http.Request))
 			So(handled, ShouldBeTrue)
 		})
 		Convey("Falls back to reflection for unknown funcs", func() {
-			invoker := registry.GetInvoker(func(a, lot, of, args int) {})
+			invoker := registry.findInvoker(func(a, lot, of, args int) {})
 			So(invoker, ShouldNotBeNil)
 		})
 	})
@@ -50,12 +50,12 @@ func TestBuiltLocators(t *testing.T) {
 		registry := NewInvocationRegistry()
 		registry.Locators = registry.Locators[1:]
 		Convey("Uses the right locator for single string argument", func() {
-			invoker := registry.GetInvoker(func(foo string) {})
+			invoker := registry.findInvoker(func(foo string) {})
 			So(invoker, ShouldNotBeNil)
 		})
 
 		Convey("Uses the right locator for http HandlerFunc", func() {
-			invoker := registry.GetInvoker(func(rw http.ResponseWriter, r *http.Request) {})
+			invoker := registry.findInvoker(func(rw http.ResponseWriter, r *http.Request) {})
 			So(invoker, ShouldNotBeNil)
 		})
 	})
@@ -71,8 +71,25 @@ func TestBuildingChain(t *testing.T) {
 			result += "blah2"
 		})
 		Convey("The chain will build a composed function executing all handlers in order", func() {
-			chain(httptest.NewRecorder(), new(http.Request))
+			chain(httptest.NewRecorder(), new(http.Request), make(map[string]string))
 			So(result, ShouldEqual, "blahblah2")
 		})
+	})
+}
+
+type TestInput string
+
+func TestBindingArguments(t *testing.T) {
+	Convey("When invoking a handler containing bindable arguments", t, func() {
+		registry := NewInvocationRegistry()
+		var x TestInput
+		handler := func(name TestInput) {
+			x = name
+		}
+
+		invoker := registry.GetInvoker(handler)
+		req, _ := http.NewRequest("GET", "http://test.com?TestInput=foo", nil)
+		invoker(httptest.NewRecorder(), req, make(map[string]string))
+		So(x, ShouldEqual, "foo")
 	})
 }

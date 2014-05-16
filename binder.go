@@ -10,6 +10,7 @@ type Binder struct {
 }
 
 type BindingContext struct {
+	rw             http.ResponseWriter
 	req            *http.Request
 	additionalArgs map[string]string
 	targetName     string
@@ -23,6 +24,7 @@ func NewBinder() *Binder {
 		formValueToPrimitiveBindRequest,
 		argsBindRequest,
 		cookieValueToPrimitiveBindRequest,
+		handlerFuncBindRequest,
 	}
 	binder := &Binder{sources}
 	return binder
@@ -31,7 +33,7 @@ func NewBinder() *Binder {
 func (b *Binder) Bind(ctx *BindingContext) (Arg, bool) {
 	for _, br := range b.sources {
 		if val, ok := br(ctx); ok {
-			return val, ok
+			return reflect.ValueOf(val).Convert(ctx.targetType).Interface(), ok
 		}
 	}
 	return nil, false
@@ -56,6 +58,16 @@ func cookieValueToPrimitiveBindRequest(ctx *BindingContext) (Arg, bool) {
 		return nil, false
 	}
 	return c.Value, true
+}
+
+func handlerFuncBindRequest(ctx *BindingContext) (Arg, bool) {
+	if reflect.ValueOf(ctx.rw).Type().AssignableTo(ctx.targetType) {
+		return ctx.rw, true
+	}
+	if reflect.ValueOf(ctx.req).Type() == ctx.targetType {
+		return ctx.req, true
+	}
+	return nil, false
 }
 
 // TODO: JSON-to-struct bind request

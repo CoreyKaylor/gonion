@@ -44,7 +44,7 @@ func (app *App) buildRuntime() *Runtime {
 		invoker := app.invocationRegistry.GetInvoker(route.Handler)
 		handler := func(rw http.ResponseWriter, r *http.Request) {
 			//much more to do here, but this is where it starts
-			invoker(rw, r)
+			invoker(rw, r, make(map[string]string))
 		}
 		runtime.Routes = append(runtime.Routes, &RuntimeRoute{route.Method, route.Pattern, handler})
 	}
