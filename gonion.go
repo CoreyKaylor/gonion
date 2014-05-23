@@ -1,52 +1,51 @@
 package gonion
 
-import (
-	"net/http"
-)
-
 type App struct {
-	routerRegistry     *RouteRegistry
-	invocationRegistry *InvocationRegistry
+	routeRegistry      *RouteRegistry
+	chainBuilder       *ChainBuilder
 	middlewareRegistry *MiddlewareRegistry
 }
 
 func New() *App {
 	routeRegistry := NewRouteRegistry()
-	invocationRegistry := NewInvocationRegistry()
+	chainBuilder := NewChainBuilder()
 	middlewareRegistry := NewMiddlewareRegistry()
-	return &App{routeRegistry, invocationRegistry, middlewareRegistry}
+	return &App{routeRegistry, chainBuilder, middlewareRegistry}
 }
 
-func (app *App) Use(name string, handler Handler) {
+var noName string = ""
+
+func (app *App) UseNamed(name string, handler Handler) {
+	//todo: add ability to specify order globally
 	app.middlewareRegistry.AppliesToAllRoutes(name, handler)
 }
 
+func (app *App) Use(handler Handler) {
+	app.UseNamed(noName, handler)
+}
+
 func (app *App) Handle(handler Handler) {
-	app.routerRegistry.AddFunc(handler)
+	//todo: make variadic?
+	app.routeRegistry.AddFunc(handler)
 }
 
 type Runtime struct {
-	Routes []*RuntimeRoute
+	Routes []*Route
 }
 
-type RouteHandler func(rw http.ResponseWriter, r *http.Request)
-
-type RuntimeRoute struct {
+type Route struct {
 	Method  string
 	Pattern string
-	Handler RouteHandler
+	Handler HandlerFunc
 }
 
 func (app *App) buildRuntime() *Runtime {
 	runtime := &Runtime{}
-	runtime.Routes = make([]*RuntimeRoute, 0, 10)
-	for _, route := range app.routerRegistry.Routes {
-		invoker := app.invocationRegistry.GetInvoker(route.Handler)
-		handler := func(rw http.ResponseWriter, r *http.Request) {
-			//much more to do here, but this is where it starts
-			invoker(rw, r, make(map[string]string))
-		}
-		runtime.Routes = append(runtime.Routes, &RuntimeRoute{route.Method, route.Pattern, handler})
+	runtime.Routes = make([]*Route, 0, 10)
+	for _, route := range app.routeRegistry.Routes {
+		middleware := app.middlewareRegistry.MiddlewareFor(route)
+		chain := app.chainBuilder.build(append(middleware, route.Handler)...)
+		runtime.Routes = append(runtime.Routes, &Route{route.Method, route.Pattern, chain})
 	}
 	return runtime
 }

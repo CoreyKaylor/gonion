@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func (r *RouteRegistry) findByPattern(pattern string) *Route {
+func (r *RouteRegistry) findByPattern(pattern string) *RouteModel {
 	for _, route := range r.Routes {
 		if route.Pattern == pattern {
 			return route

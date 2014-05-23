@@ -8,12 +8,12 @@ import (
 
 //Storage for route information
 type RouteRegistry struct {
-	Routes []*Route
+	Routes []*RouteModel
 }
 
 type Handler interface{}
 
-type Route struct {
+type RouteModel struct {
 	Method  string
 	Pattern string
 	Handler Handler
@@ -24,7 +24,7 @@ func (r *RouteRegistry) AddFunc(i interface{}) {
 	r.Routes = append(r.Routes, route)
 }
 
-func buildRouteForFunc(i interface{}) *Route {
+func buildRouteForFunc(i interface{}) *RouteModel {
 	//TODO pull out url policy
 	funcType := reflect.TypeOf(i)
 	if funcType.Kind() != reflect.Func {
@@ -45,10 +45,10 @@ func buildRouteForFunc(i interface{}) *Route {
 			pattern = pattern + part
 		}
 	}
-	return &Route{method, pattern, i}
+	return &RouteModel{method, pattern, i}
 }
 
 //Creates a new RouteRegistry for storing route information
 func NewRouteRegistry() *RouteRegistry {
-	return &RouteRegistry{make([]*Route, 0, 10)}
+	return &RouteRegistry{make([]*RouteModel, 0, 10)}
 }
