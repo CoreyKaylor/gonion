@@ -1,6 +1,7 @@
 package gonion
 
 import (
+	"github.com/julienschmidt/httprouter"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
@@ -50,6 +51,28 @@ func TestIntegratingAllThePieces(t *testing.T) {
 			route := runtime.routeFor("/api/admin/super-important")
 			route.Handler.ServeHTTP(recorder, new(http.Request))
 			So(recorder.Body.String(), ShouldEqual, "usefunc->timeout->handlerfunc->api-key->isadmin->importantstuff!")
+		})
+	})
+}
+
+func TestEndToEndWithRouter(t *testing.T) {
+	Convey("When using a routing package", t, func() {
+		g := New()
+		g.Get("/hello", func(rw http.ResponseWriter, r *http.Request) {
+			rw.Write([]byte("Success!"))
+		})
+		routes := g.buildRuntime()
+		router := httprouter.New()
+		for _, route := range routes.Routes {
+			router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, m map[string]string) {
+				route.Handler.ServeHTTP(rw, r)
+			})
+		}
+		recorder := httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/hello", nil)
+		router.ServeHTTP(recorder, request)
+		Convey("Everything should flow through to the registered handler", func() {
+			So(recorder.Body.String(), ShouldEqual, "Success!")
 		})
 	})
 }

@@ -133,7 +133,7 @@ type Route struct {
 	Handler http.Handler
 }
 
-func (app *App) buildRuntime() *Runtime {
+func (app *App) BuildRoutes() *Runtime {
 	runtime := &Runtime{}
 	runtime.Routes = make([]*Route, 0, 10)
 	for _, route := range app.routeRegistry.Routes {
