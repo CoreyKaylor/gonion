@@ -12,7 +12,7 @@ func TestAppInitialization(t *testing.T) {
 		Convey("The route handler is built", func() {
 			g := New()
 			g.Handle("GET", "/index2", get_index2)
-			runtime := g.buildRuntime()
+			runtime := g.BuildRoutes()
 			route := runtime.routeFor("/index2")
 			recorder := httptest.NewRecorder()
 			route.Handler.ServeHTTP(recorder, new(http.Request))
@@ -38,15 +38,15 @@ func TestChainWrappingSemantics(t *testing.T) {
 		wrapperHandler := func(rw http.ResponseWriter, r *http.Request, next http.Handler) {
 			next.ServeHTTP(&wrapper{rw}, r)
 		}
-		g.UseWrappingHandler(wrapperHandler)
+		g.UseWrappingHandlerFunc(wrapperHandler)
 		g.UseFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("no-wrap"))
 		})
-		g.UseWrappingHandler(wrapperHandler)
-		g.UseWrappingHandler(wrapperHandler)
+		g.UseWrappingHandlerFunc(wrapperHandler)
+		g.UseWrappingHandlerFunc(wrapperHandler)
 
 		g.Handle("GET", "/index2", get_index2)
-		runtime := g.buildRuntime()
+		runtime := g.BuildRoutes()
 		route := runtime.routeFor("/index2")
 		recorder := httptest.NewRecorder()
 		route.Handler.ServeHTTP(recorder, new(http.Request))
@@ -63,7 +63,7 @@ func TestContextualHandlers(t *testing.T) {
 	})
 	g.UseContextualHandler(MyM((*MyContext).Middle))
 	g.GetC("/", MyM((*MyContext).Get))
-	runtime := g.buildRuntime()
+	runtime := g.BuildRoutes()
 	route := runtime.routeFor("/")
 	recorder := httptest.NewRecorder()
 	route.Handler.ServeHTTP(recorder, new(http.Request))
@@ -111,11 +111,11 @@ func get_index3(rw http.ResponseWriter, r *http.Request) {
 
 func BenchmarkSimpleInvocation(b *testing.B) {
 	g := New()
-	g.UseWrappingHandler(func(rw http.ResponseWriter, r *http.Request, handler http.Handler) {
+	g.UseWrappingHandlerFunc(func(rw http.ResponseWriter, r *http.Request, handler http.Handler) {
 		handler.ServeHTTP(rw, r)
 	})
 	g.Handle("GET", "/index3", get_index3)
-	runtime := g.buildRuntime()
+	runtime := g.BuildRoutes()
 	route := runtime.routeFor("/index3")
 	b.ReportAllocs()
 	b.ResetTimer()

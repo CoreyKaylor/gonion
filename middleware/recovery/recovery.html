@@ -1,0 +1,39 @@
+<html>
+	<head>
+		<title>PANIC: {{.ErrorMessage }}</title>
+		<style type="text/css">
+		html, body {
+			margin: 0;
+			padding: 0;
+			font-family: Helvetica, Arial, Sans;
+			background: #EEEEEE;
+		}
+		.block {
+			padding: 20px;
+			border-bottom: 1px solid #aaa;
+		}
+		h1 {
+			font-weight: normal;
+			font-size: 28px;
+			margin: 0;
+		}
+		header {
+			background: #fcd2da;
+		}
+		.stacktrace {
+			background: #f6f6f6;
+		}
+		pre {
+			font-size: 14px;
+			margin: 0;
+			overflow-x: hidden;
+		}
+		</style>
+	</head>
+	<body>
+		<header>
+			<h1>PANIC: {{.ErrorMessage}}</h1>
+		</header>
+		<pre class="stacktrace">{{.StackTrace}}</pre>
+	</body>
+</html>

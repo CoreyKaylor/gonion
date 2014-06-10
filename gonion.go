@@ -49,10 +49,24 @@ func (app *App) Use(handler http.Handler) {
 	app.addMiddleware(wrap(handler))
 }
 
-func (app *App) UseWrappingHandler(handler func(http.ResponseWriter, *http.Request, http.Handler)) {
+type WrappingHandler interface {
+	ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Handler)
+}
+
+type WrappingHandlerFunc func(http.ResponseWriter, *http.Request, http.Handler)
+
+func (wh WrappingHandlerFunc) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Handler) {
+	wh(rw, r, next)
+}
+
+func (app *App) UseWrappingHandlerFunc(handler func(http.ResponseWriter, *http.Request, http.Handler)) {
+	app.UseWrappingHandler(WrappingHandlerFunc(handler))
+}
+
+func (app *App) UseWrappingHandler(handler WrappingHandler) {
 	chainLink := ChainLink(func(inner ChainHandler) ChainHandler {
 		return ChainHandlerFunc(func(context *ChainContext) {
-			handler(context.rw, context.req, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			handler.ServeHTTP(context.rw, context.req, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				context.rw = rw
 				context.req = r
 				inner.ServeHTTP(context)

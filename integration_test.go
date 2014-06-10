@@ -35,7 +35,7 @@ func TestIntegratingAllThePieces(t *testing.T) {
 				})
 			})
 		})
-		runtime := g.buildRuntime()
+		runtime := g.BuildRoutes()
 		recorder := httptest.NewRecorder()
 		Convey("Routes defined for the root path don't inherit sub-route middlware", func() {
 			route := runtime.routeFor("/")
@@ -61,7 +61,7 @@ func TestEndToEndWithRouter(t *testing.T) {
 		g.Get("/hello", func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("Success!"))
 		})
-		routes := g.buildRuntime()
+		routes := g.BuildRoutes()
 		router := httprouter.New()
 		for _, route := range routes.Routes {
 			router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, m map[string]string) {
