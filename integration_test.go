@@ -11,23 +11,23 @@ import (
 func TestIntegratingAllThePieces(t *testing.T) {
 	Convey("When using all API functions", t, func() {
 		g := New()
-		g.UseFunc(func(rw http.ResponseWriter, r *http.Request) {
+		g.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("usefunc->"))
 		})
-		g.UseMiddlewareConstructor(timeoutHandler)
-		g.Use(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		g.Use().ConstructorFunc(timeoutHandler)
+		g.Use().HandlerFunc(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("handlerfunc->"))
 		}))
 		g.Get("/", Index)
 		g.Sub("/api", func(api *Composer) {
-			api.UseFunc(func(rw http.ResponseWriter, r *http.Request) {
+			api.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 				rw.Write([]byte("api-key->"))
 			})
 			api.Get("/users/:id", func(rw http.ResponseWriter, r *http.Request) {
 				rw.Write([]byte("subSuccess!"))
 			})
 			api.Sub("/admin", func(admin *Composer) {
-				admin.UseFunc(func(rw http.ResponseWriter, r *http.Request) {
+				admin.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 					rw.Write([]byte("isadmin->"))
 				})
 				admin.Get("/super-important", func(rw http.ResponseWriter, r *http.Request) {

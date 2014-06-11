@@ -22,13 +22,13 @@ func (c ChainHandlerFunc) ServeHTTP(context *ChainContext) {
 
 type ChainLink func(ChainHandler) ChainHandler
 
-func build(handler ChainHandler, chainLinks []ChainLink) http.Handler {
+func build(handler ChainHandler, middleware []*Middleware, contextFactory func() interface{}) http.Handler {
 	chain := handler
-	for i := len(chainLinks) - 1; i >= 0; i-- {
-		chain = chainLinks[i](chain)
+	for i := len(middleware) - 1; i >= 0; i-- {
+		chain = middleware[i].Handler(chain)
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		context := &ChainContext{rw, req, fac()}
+		context := &ChainContext{rw, req, contextFactory()}
 		chain.ServeHTTP(context)
 	})
 }
@@ -39,14 +39,17 @@ type RouteRegistry struct {
 }
 
 type RouteModel struct {
-	Method  string
-	Pattern string
-	Handler ChainHandler
+	Method         string
+	Pattern        string
+	Handler        ChainHandler
+	ContextOptions *ContextOptions
 }
 
-func (r *RouteRegistry) AddRoute(method string, pattern string, handler ChainHandler) {
-	route := &RouteModel{method, pattern, handler}
+func (r *RouteRegistry) AddRoute(method string, pattern string, handler ChainHandler) *ContextOptions {
+	contextOptions := newContextOptions()
+	route := &RouteModel{method, pattern, handler, contextOptions}
 	r.Routes = append(r.Routes, route)
+	return contextOptions
 }
 
 //Creates a new RouteRegistry for storing route information
@@ -59,8 +62,9 @@ type MiddlewareRegistry struct {
 }
 
 type Middleware struct {
-	Filter  RouteFilter
-	Handler ChainLink
+	Filter         RouteFilter
+	Handler        ChainLink
+	ContextOptions *ContextOptions
 }
 
 type RouteFilter func(*RouteModel) bool
@@ -69,21 +73,23 @@ func NewMiddlewareRegistry() *MiddlewareRegistry {
 	return &MiddlewareRegistry{make([]*Middleware, 0, 10)}
 }
 
-func (m *MiddlewareRegistry) AppliesToAllRoutes(handler ChainLink) {
+func (m *MiddlewareRegistry) AppliesToAllRoutes(handler ChainLink) *ContextOptions {
+	contextOptions := newContextOptions()
 	m.Add(func(route *RouteModel) bool {
 		return true
-	}, handler)
+	}, handler, contextOptions)
+	return contextOptions
 }
 
-func (m *MiddlewareRegistry) Add(filter RouteFilter, handler ChainLink) {
-	m.Middleware = append(m.Middleware, &Middleware{filter, handler})
+func (m *MiddlewareRegistry) Add(filter RouteFilter, handler ChainLink, contextOptions *ContextOptions) {
+	m.Middleware = append(m.Middleware, &Middleware{filter, handler, contextOptions})
 }
 
-func (m *MiddlewareRegistry) MiddlewareFor(route *RouteModel) []ChainLink {
-	ret := make([]ChainLink, 0, 10)
+func (m *MiddlewareRegistry) MiddlewareFor(route *RouteModel) []*Middleware {
+	ret := make([]*Middleware, 0, 10)
 	for _, middle := range m.Middleware {
 		if middle.Filter(route) {
-			ret = append(ret, middle.Handler)
+			ret = append(ret, middle)
 		}
 	}
 	return ret

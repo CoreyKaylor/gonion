@@ -38,13 +38,12 @@ func TestChainWrappingSemantics(t *testing.T) {
 		wrapperHandler := func(rw http.ResponseWriter, r *http.Request, next http.Handler) {
 			next.ServeHTTP(&wrapper{rw}, r)
 		}
-		g.UseWrappingHandlerFunc(wrapperHandler)
-		g.UseFunc(func(rw http.ResponseWriter, r *http.Request) {
+		g.Use().WrappingFunc(wrapperHandler)
+		g.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("no-wrap"))
 		})
-		g.UseWrappingHandlerFunc(wrapperHandler)
-		g.UseWrappingHandlerFunc(wrapperHandler)
-
+		g.Use().WrappingFunc(wrapperHandler)
+		g.Use().WrappingFunc(wrapperHandler)
 		g.Handle("GET", "/index2", get_index2)
 		routes := g.BuildRoutes()
 		route := routes.routeFor("/index2")
@@ -58,11 +57,10 @@ func TestChainWrappingSemantics(t *testing.T) {
 
 func TestContextualHandlers(t *testing.T) {
 	g := New()
-	g.CreateContext(func() interface{} {
+	g.Use().ContextHandler(MyContextFunc((*MyContext).Middle)).CreateContext(func() interface{} {
 		return &MyContext{}
 	})
-	g.UseContextualHandler(MyM((*MyContext).Middle))
-	g.GetC("/", MyM((*MyContext).Get))
+	g.GetC("/", MyContextFunc((*MyContext).Get))
 	routes := g.BuildRoutes()
 	route := routes.routeFor("/")
 	recorder := httptest.NewRecorder()
@@ -74,12 +72,10 @@ func TestContextualHandlers(t *testing.T) {
 	}
 }
 
-type MyM func(*MyContext, http.ResponseWriter, *http.Request)
+type MyContextFunc func(*MyContext, http.ResponseWriter, *http.Request)
 
-func (m MyM) Wrap() func(interface{}, http.ResponseWriter, *http.Request) {
-	return func(i interface{}, rw http.ResponseWriter, req *http.Request) {
-		m(i.(*MyContext), rw, req)
-	}
+func (m MyContextFunc) ServeHTTP(i interface{}, rw http.ResponseWriter, r *http.Request) {
+	m(i.(*MyContext), rw, r)
 }
 
 type MyContext struct {
@@ -111,7 +107,7 @@ func get_index3(rw http.ResponseWriter, r *http.Request) {
 
 func BenchmarkSimpleInvocation(b *testing.B) {
 	g := New()
-	g.UseWrappingHandlerFunc(func(rw http.ResponseWriter, r *http.Request, handler http.Handler) {
+	g.Use().WrappingFunc(func(rw http.ResponseWriter, r *http.Request, handler http.Handler) {
 		handler.ServeHTTP(rw, r)
 	})
 	g.Handle("GET", "/index3", get_index3)
