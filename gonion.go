@@ -61,8 +61,8 @@ var fac func() interface{} = func() interface{} {
 }
 
 func (composer *Composer) GetC(pattern string, handler ContextHandler) *ContextOptions {
-	chainHandlerFunc := ChainHandlerFunc(func(context *ChainContext) {
-		handler.ServeHTTP(context.i, context.rw, context.req)
+	chainHandlerFunc := ChainHandlerFunc(func(i interface{}, rw http.ResponseWriter, r *http.Request) {
+		handler.ServeHTTP(i, rw, r)
 	})
 	return composer.routeRegistry.AddRoute("GET", composer.start+pattern, chainHandlerFunc)
 }
@@ -73,8 +73,8 @@ func (composer *Composer) Handle(method string, pattern string, handler func(htt
 }
 
 func wrapHandler(handler http.Handler) ChainHandler {
-	return ChainHandlerFunc(func(context *ChainContext) {
-		handler.ServeHTTP(context.rw, context.req)
+	return ChainHandlerFunc(func(i interface{}, rw http.ResponseWriter, r *http.Request) {
+		handler.ServeHTTP(rw, r)
 	})
 }
 

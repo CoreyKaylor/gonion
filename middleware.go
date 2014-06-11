@@ -24,11 +24,9 @@ func (mo *MiddlewareOptions) WrappingFunc(handler func(http.ResponseWriter, *htt
 
 func (mo *MiddlewareOptions) WrappingHandler(handler WrappingHandler) {
 	chainLink := ChainLink(func(inner ChainHandler) ChainHandler {
-		return ChainHandlerFunc(func(context *ChainContext) {
-			handler.ServeHTTP(context.rw, context.req, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				context.rw = rw
-				context.req = r
-				inner.ServeHTTP(context)
+		return ChainHandlerFunc(func(i interface{}, rw http.ResponseWriter, r *http.Request) {
+			handler.ServeHTTP(rw, r, http.HandlerFunc(func(rwAfter http.ResponseWriter, rAfter *http.Request) {
+				inner.ServeHTTP(i, rwAfter, rAfter)
 			}))
 		})
 	})
@@ -37,13 +35,11 @@ func (mo *MiddlewareOptions) WrappingHandler(handler WrappingHandler) {
 
 func (mo *MiddlewareOptions) ConstructorFunc(ctor func(http.Handler) http.Handler) {
 	chainLink := ChainLink(func(inner ChainHandler) ChainHandler {
-		return ChainHandlerFunc(func(context *ChainContext) {
-			current := ctor(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-				context.rw = rw
-				context.req = r
-				inner.ServeHTTP(context)
+		return ChainHandlerFunc(func(i interface{}, rw http.ResponseWriter, r *http.Request) {
+			current := ctor(http.HandlerFunc(func(rwAfter http.ResponseWriter, rAfter *http.Request) {
+				inner.ServeHTTP(i, rwAfter, rAfter)
 			}))
-			current.ServeHTTP(context.rw, context.req)
+			current.ServeHTTP(rw, r)
 		})
 	})
 	mo.composer.addMiddleware(chainLink)
@@ -51,9 +47,9 @@ func (mo *MiddlewareOptions) ConstructorFunc(ctor func(http.Handler) http.Handle
 
 func wrap(handler http.Handler) ChainLink {
 	return ChainLink(func(inner ChainHandler) ChainHandler {
-		return ChainHandlerFunc(func(context *ChainContext) {
-			handler.ServeHTTP(context.rw, context.req)
-			inner.ServeHTTP(context)
+		return ChainHandlerFunc(func(i interface{}, rw http.ResponseWriter, r *http.Request) {
+			handler.ServeHTTP(rw, r)
+			inner.ServeHTTP(i, rw, r)
 		})
 	})
 }
@@ -72,9 +68,9 @@ func (mo *MiddlewareOptions) HandlerFunc(handler http.HandlerFunc) {
 
 func (mo *MiddlewareOptions) ContextHandler(handler ContextHandler) *ContextOptions {
 	chainLink := ChainLink(func(inner ChainHandler) ChainHandler {
-		return ChainHandlerFunc(func(context *ChainContext) {
-			handler.ServeHTTP(context.i, context.rw, context.req)
-			inner.ServeHTTP(context)
+		return ChainHandlerFunc(func(i interface{}, rw http.ResponseWriter, r *http.Request) {
+			handler.ServeHTTP(i, rw, r)
+			inner.ServeHTTP(i, rw, r)
 		})
 	})
 	return mo.composer.addMiddleware(chainLink)
