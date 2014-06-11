@@ -35,20 +35,20 @@ func TestIntegratingAllThePieces(t *testing.T) {
 				})
 			})
 		})
-		runtime := g.BuildRoutes()
+		routes := g.BuildRoutes()
 		recorder := httptest.NewRecorder()
 		Convey("Routes defined for the root path don't inherit sub-route middlware", func() {
-			route := runtime.routeFor("/")
+			route := routes.routeFor("/")
 			route.Handler.ServeHTTP(recorder, new(http.Request))
 			So(recorder.Body.String(), ShouldEqual, "usefunc->timeout->handlerfunc->Success!")
 		})
 		Convey("Sub-routes do inherit root middlware in addition to its own", func() {
-			route := runtime.routeFor("/api/users/:id")
+			route := routes.routeFor("/api/users/:id")
 			route.Handler.ServeHTTP(recorder, new(http.Request))
 			So(recorder.Body.String(), ShouldEqual, "usefunc->timeout->handlerfunc->api-key->subSuccess!")
 		})
 		Convey("Sub-Sub-routes do inherit root middlware in addition to its own", func() {
-			route := runtime.routeFor("/api/admin/super-important")
+			route := routes.routeFor("/api/admin/super-important")
 			route.Handler.ServeHTTP(recorder, new(http.Request))
 			So(recorder.Body.String(), ShouldEqual, "usefunc->timeout->handlerfunc->api-key->isadmin->importantstuff!")
 		})
@@ -63,7 +63,7 @@ func TestEndToEndWithRouter(t *testing.T) {
 		})
 		routes := g.BuildRoutes()
 		router := httprouter.New()
-		for _, route := range routes.Routes {
+		for _, route := range routes {
 			router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, m map[string]string) {
 				route.Handler.ServeHTTP(rw, r)
 			})

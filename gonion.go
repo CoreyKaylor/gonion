@@ -137,9 +137,7 @@ func wrapHandler(handler http.Handler) ChainHandler {
 	})
 }
 
-type Runtime struct {
-	Routes []*Route
-}
+type Routes []*Route
 
 type Route struct {
 	Method  string
@@ -147,13 +145,12 @@ type Route struct {
 	Handler http.Handler
 }
 
-func (composer *Composer) BuildRoutes() *Runtime {
-	runtime := &Runtime{}
-	runtime.Routes = make([]*Route, 0, 10)
+func (composer *Composer) BuildRoutes() Routes {
+	routes := make(Routes, 0, 10)
 	for _, route := range composer.routeRegistry.Routes {
 		middleware := composer.middlewareRegistry.MiddlewareFor(route)
 		handler := build(route.Handler, middleware)
-		runtime.Routes = append(runtime.Routes, &Route{route.Method, route.Pattern, handler})
+		routes = append(routes, &Route{route.Method, route.Pattern, handler})
 	}
-	return runtime
+	return routes
 }
