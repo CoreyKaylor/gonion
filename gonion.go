@@ -5,26 +5,26 @@ import (
 	"strings"
 )
 
-type App struct {
+type Composer struct {
 	start              string
 	routeRegistry      *RouteRegistry
 	middlewareRegistry *MiddlewareRegistry
 }
 
-func New() *App {
+func New() *Composer {
 	routeRegistry := NewRouteRegistry()
 	middlewareRegistry := NewMiddlewareRegistry()
-	return &App{"", routeRegistry, middlewareRegistry}
+	return &Composer{"", routeRegistry, middlewareRegistry}
 }
 
-func (app *App) Sub(pattern string, sub func(*App)) {
-	subApp := &App{app.start + pattern, app.routeRegistry, app.middlewareRegistry}
-	sub(subApp)
+func (composer *Composer) Sub(pattern string, sub func(*Composer)) {
+	subComposer := &Composer{composer.start + pattern, composer.routeRegistry, composer.middlewareRegistry}
+	sub(subComposer)
 }
 
-func (app *App) addMiddleware(link ChainLink) {
-	app.middlewareRegistry.Add(func(route *RouteModel) bool {
-		return app.start == "" || strings.HasPrefix(route.Pattern, app.start)
+func (composer *Composer) addMiddleware(link ChainLink) {
+	composer.middlewareRegistry.Add(func(route *RouteModel) bool {
+		return composer.start == "" || strings.HasPrefix(route.Pattern, composer.start)
 	}, link)
 }
 
@@ -37,16 +37,16 @@ func wrap(handler http.Handler) ChainLink {
 	})
 }
 
-func (app *App) UseFunc(handler func(http.ResponseWriter, *http.Request)) {
-	app.Use(http.HandlerFunc(handler))
+func (composer *Composer) UseFunc(handler func(http.ResponseWriter, *http.Request)) {
+	composer.Use(http.HandlerFunc(handler))
 }
 
-func (app *App) Get(pattern string, handler func(http.ResponseWriter, *http.Request)) {
-	app.Handle("GET", pattern, http.HandlerFunc(handler))
+func (composer *Composer) Get(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	composer.Handle("GET", pattern, http.HandlerFunc(handler))
 }
 
-func (app *App) Use(handler http.Handler) {
-	app.addMiddleware(wrap(handler))
+func (composer *Composer) Use(handler http.Handler) {
+	composer.addMiddleware(wrap(handler))
 }
 
 type WrappingHandler interface {
@@ -59,11 +59,11 @@ func (wh WrappingHandlerFunc) ServeHTTP(rw http.ResponseWriter, r *http.Request,
 	wh(rw, r, next)
 }
 
-func (app *App) UseWrappingHandlerFunc(handler func(http.ResponseWriter, *http.Request, http.Handler)) {
-	app.UseWrappingHandler(WrappingHandlerFunc(handler))
+func (composer *Composer) UseWrappingHandlerFunc(handler func(http.ResponseWriter, *http.Request, http.Handler)) {
+	composer.UseWrappingHandler(WrappingHandlerFunc(handler))
 }
 
-func (app *App) UseWrappingHandler(handler WrappingHandler) {
+func (composer *Composer) UseWrappingHandler(handler WrappingHandler) {
 	chainLink := ChainLink(func(inner ChainHandler) ChainHandler {
 		return ChainHandlerFunc(func(context *ChainContext) {
 			handler.ServeHTTP(context.rw, context.req, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -73,10 +73,10 @@ func (app *App) UseWrappingHandler(handler WrappingHandler) {
 			}))
 		})
 	})
-	app.addMiddleware(chainLink)
+	composer.addMiddleware(chainLink)
 }
 
-func (app *App) UseMiddlewareConstructor(ctor func(http.Handler) http.Handler) {
+func (composer *Composer) UseMiddlewareConstructor(ctor func(http.Handler) http.Handler) {
 	chainLink := ChainLink(func(inner ChainHandler) ChainHandler {
 		return ChainHandlerFunc(func(context *ChainContext) {
 			current := ctor(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -87,7 +87,7 @@ func (app *App) UseMiddlewareConstructor(ctor func(http.Handler) http.Handler) {
 			current.ServeHTTP(context.rw, context.req)
 		})
 	})
-	app.addMiddleware(chainLink)
+	composer.addMiddleware(chainLink)
 }
 
 type ContextWrapper interface {
@@ -98,16 +98,16 @@ var fac func() interface{} = func() interface{} {
 	return nil
 }
 
-func (app *App) CreateContext(factory func() interface{}) {
+func (composer *Composer) CreateContext(factory func() interface{}) {
 	fac = factory
 }
 
-func (app *App) UseContextualHandler(wrapper ContextWrapper) {
-	chainLink := app.buildChainLink(wrapper)
-	app.addMiddleware(chainLink)
+func (composer *Composer) UseContextualHandler(wrapper ContextWrapper) {
+	chainLink := composer.buildChainLink(wrapper)
+	composer.addMiddleware(chainLink)
 }
 
-func (app *App) buildChainLink(wrapper ContextWrapper) ChainLink {
+func (composer *Composer) buildChainLink(wrapper ContextWrapper) ChainLink {
 	contextFunc := wrapper.Wrap()
 	chainLink := ChainLink(func(inner ChainHandler) ChainHandler {
 		return ChainHandlerFunc(func(context *ChainContext) {
@@ -118,17 +118,17 @@ func (app *App) buildChainLink(wrapper ContextWrapper) ChainLink {
 	return chainLink
 }
 
-func (app *App) GetC(pattern string, wrapper ContextWrapper) {
+func (composer *Composer) GetC(pattern string, wrapper ContextWrapper) {
 	contextFunc := wrapper.Wrap()
 	chainHandlerFunc := ChainHandlerFunc(func(context *ChainContext) {
 		contextFunc(context.i, context.rw, context.req)
 	})
-	app.routeRegistry.AddRoute("GET", app.start+pattern, chainHandlerFunc)
+	composer.routeRegistry.AddRoute("GET", composer.start+pattern, chainHandlerFunc)
 }
 
-func (app *App) Handle(method string, pattern string, handler func(http.ResponseWriter, *http.Request)) {
+func (composer *Composer) Handle(method string, pattern string, handler func(http.ResponseWriter, *http.Request)) {
 	handlerFunc := http.HandlerFunc(handler)
-	app.routeRegistry.AddRoute(method, app.start+pattern, wrapHandler(handlerFunc))
+	composer.routeRegistry.AddRoute(method, composer.start+pattern, wrapHandler(handlerFunc))
 }
 
 func wrapHandler(handler http.Handler) ChainHandler {
@@ -147,11 +147,11 @@ type Route struct {
 	Handler http.Handler
 }
 
-func (app *App) BuildRoutes() *Runtime {
+func (composer *Composer) BuildRoutes() *Runtime {
 	runtime := &Runtime{}
 	runtime.Routes = make([]*Route, 0, 10)
-	for _, route := range app.routeRegistry.Routes {
-		middleware := app.middlewareRegistry.MiddlewareFor(route)
+	for _, route := range composer.routeRegistry.Routes {
+		middleware := composer.middlewareRegistry.MiddlewareFor(route)
 		handler := build(route.Handler, middleware)
 		runtime.Routes = append(runtime.Routes, &Route{route.Method, route.Pattern, handler})
 	}

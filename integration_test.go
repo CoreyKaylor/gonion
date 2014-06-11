@@ -19,14 +19,14 @@ func TestIntegratingAllThePieces(t *testing.T) {
 			rw.Write([]byte("handlerfunc->"))
 		}))
 		g.Get("/", Index)
-		g.Sub("/api", func(api *App) {
+		g.Sub("/api", func(api *Composer) {
 			api.UseFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.Write([]byte("api-key->"))
 			})
 			api.Get("/users/:id", func(rw http.ResponseWriter, r *http.Request) {
 				rw.Write([]byte("subSuccess!"))
 			})
-			api.Sub("/admin", func(admin *App) {
+			api.Sub("/admin", func(admin *Composer) {
 				admin.UseFunc(func(rw http.ResponseWriter, r *http.Request) {
 					rw.Write([]byte("isadmin->"))
 				})
