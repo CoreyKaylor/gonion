@@ -1,11 +1,12 @@
 package gonion
 
 import (
-	"github.com/julienschmidt/httprouter"
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/julienschmidt/httprouter"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestIntegratingAllThePieces(t *testing.T) {

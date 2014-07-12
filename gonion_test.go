@@ -1,10 +1,11 @@
 package gonion
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestAppInitialization(t *testing.T) {
@@ -103,21 +104,4 @@ func get_index2(rw http.ResponseWriter, r *http.Request) {
 }
 
 func get_index3(rw http.ResponseWriter, r *http.Request) {
-}
-
-func BenchmarkSimpleInvocation(b *testing.B) {
-	g := New()
-	g.Use().WrappingFunc(func(rw http.ResponseWriter, r *http.Request, handler http.Handler) {
-		handler.ServeHTTP(rw, r)
-	})
-	g.Handle("GET", "/index3", get_index3)
-	routes := g.BuildRoutes()
-	route := routes.routeFor("/index3")
-	b.ReportAllocs()
-	b.ResetTimer()
-	recorder := httptest.NewRecorder()
-	request := new(http.Request)
-	for i := 0; i < b.N; i++ {
-		route.Handler.ServeHTTP(recorder, request)
-	}
 }

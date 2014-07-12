@@ -5,19 +5,13 @@ import (
 )
 
 type ChainHandler interface {
-	ServeHTTP(i interface{}, rw http.ResponseWriter, r *http.Request)
+	ServeHTTP(requestContext map[string]interface{}, rw http.ResponseWriter, r *http.Request)
 }
 
-type ChainContext struct {
-	rw  http.ResponseWriter
-	req *http.Request
-	i   interface{} //user specific context
-}
+type ChainHandlerFunc func(requestContext map[string]interface{}, rw http.ResponseWriter, r *http.Request)
 
-type ChainHandlerFunc func(i interface{}, rw http.ResponseWriter, r *http.Request)
-
-func (c ChainHandlerFunc) ServeHTTP(i interface{}, rw http.ResponseWriter, r *http.Request) {
-	c(i, rw, r)
+func (c ChainHandlerFunc) ServeHTTP(requestContext map[string]interface{}, rw http.ResponseWriter, r *http.Request) {
+	c(requestContext, rw, r)
 }
 
 type ChainLink func(ChainHandler) ChainHandler
@@ -28,7 +22,12 @@ func build(handler ChainHandler, middleware []*Middleware, contextFactory func()
 		chain = middleware[i].Handler(chain)
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		chain.ServeHTTP(contextFactory(), rw, req)
+		requestContext := make(map[string]interface{})
+		userContext := contextFactory()
+		if userContext != nil {
+			requestContext["user-context"] = userContext
+		}
+		chain.ServeHTTP(requestContext, rw, req)
 	})
 }
 
