@@ -34,18 +34,14 @@ func Benchmark_Simple(b *testing.B) {
 func Benchmark_Middleware(b *testing.B) {
 	g := New()
 	g.Sub("/a", func(a *Composer) {
-		a.Use().WrappingFunc(func(rw http.ResponseWriter, r *http.Request, next http.Handler) {
-			next.ServeHTTP(rw, r)
+		a.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 		})
-		a.Use().WrappingFunc(func(rw http.ResponseWriter, r *http.Request, next http.Handler) {
-			next.ServeHTTP(rw, r)
+		a.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 		})
 		a.Sub("/c", func(c *Composer) {
-			c.Use().WrappingFunc(func(rw http.ResponseWriter, r *http.Request, next http.Handler) {
-				next.ServeHTTP(rw, r)
+			c.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 			})
-			c.Use().WrappingFunc(func(rw http.ResponseWriter, r *http.Request, next http.Handler) {
-				next.ServeHTTP(rw, r)
+			c.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 			})
 			c.Get("/action", func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(rw, "hello")

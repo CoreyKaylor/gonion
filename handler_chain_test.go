@@ -1,14 +1,16 @@
 package gonion
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
+	"net/http"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestMiddlewareRegistry(t *testing.T) {
 	Convey("When registering middleware for all routes", t, func() {
 		m := NewMiddlewareRegistry()
-		m.AppliesToAllRoutes(func(ChainHandler) ChainHandler {
+		m.AppliesToAllRoutes(func(http.Handler) http.Handler {
 			return nil
 		})
 		Convey("It should return true always", func() {

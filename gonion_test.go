@@ -36,15 +36,17 @@ func (rw *wrapper) Write(b []byte) (int, error) {
 func TestChainWrappingSemantics(t *testing.T) {
 	Convey("When middleware wraps the writer it should use the wrapped writer for chain", t, func() {
 		g := New()
-		wrapperHandler := func(rw http.ResponseWriter, r *http.Request, next http.Handler) {
-			next.ServeHTTP(&wrapper{rw}, r)
+		wrapperHandler := func(inner http.Handler) http.Handler {
+			return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				inner.ServeHTTP(&wrapper{rw}, r)
+			})
 		}
-		g.Use().WrappingFunc(wrapperHandler)
+		g.Use().ChainLink(wrapperHandler)
 		g.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("no-wrap"))
 		})
-		g.Use().WrappingFunc(wrapperHandler)
-		g.Use().WrappingFunc(wrapperHandler)
+		g.Use().ChainLink(wrapperHandler)
+		g.Use().ChainLink(wrapperHandler)
 		g.Handle("GET", "/index2", get_index2)
 		routes := g.BuildRoutes()
 		route := routes.routeFor("/index2")
@@ -54,40 +56,6 @@ func TestChainWrappingSemantics(t *testing.T) {
 		response := recorder.Body.String()
 		So(response, ShouldEqual, "wrapperno-wrapwrapperwrapperwrapperwrapperwrapperwrapperwrapperSuccess!")
 	})
-}
-
-func TestContextualHandlers(t *testing.T) {
-	g := New()
-	g.Use().ContextHandler(MyContextFunc((*MyContext).Middle)).CreateContext(func() interface{} {
-		return &MyContext{}
-	})
-	g.GetC("/", MyContextFunc((*MyContext).Get))
-	routes := g.BuildRoutes()
-	route := routes.routeFor("/")
-	recorder := httptest.NewRecorder()
-	route.Handler.ServeHTTP(recorder, new(http.Request))
-
-	response := recorder.Body.String()
-	if response != "middlecontextgetcontext" {
-		t.FailNow()
-	}
-}
-
-type MyContextFunc func(*MyContext, http.ResponseWriter, *http.Request)
-
-func (m MyContextFunc) ServeHTTP(i interface{}, rw http.ResponseWriter, r *http.Request) {
-	m(i.(*MyContext), rw, r)
-}
-
-type MyContext struct {
-}
-
-func (c *MyContext) Middle(rw http.ResponseWriter, req *http.Request) {
-	rw.Write([]byte("middlecontext"))
-}
-
-func (c *MyContext) Get(rw http.ResponseWriter, req *http.Request) {
-	rw.Write([]byte("getcontext"))
 }
 
 func (routes Routes) routeFor(pattern string) *Route {
@@ -101,7 +69,4 @@ func (routes Routes) routeFor(pattern string) *Route {
 
 func get_index2(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("Success!"))
-}
-
-func get_index3(rw http.ResponseWriter, r *http.Request) {
 }

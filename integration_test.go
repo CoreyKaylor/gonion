@@ -15,8 +15,8 @@ func TestIntegratingAllThePieces(t *testing.T) {
 		g.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("usefunc->"))
 		})
-		g.Use().ConstructorFunc(timeoutHandler)
-		g.Use().HandlerFunc(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		g.Use().ChainLink(timeoutHandler)
+		g.Use().Handler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("handlerfunc->"))
 		}))
 		g.Get("/", Index)

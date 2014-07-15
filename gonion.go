@@ -22,26 +22,10 @@ func (composer *Composer) Sub(pattern string, sub func(*Composer)) {
 	sub(subComposer)
 }
 
-type ContextOptions struct {
-	factory  func() interface{}
-	replaced bool
-}
-
-func (co *ContextOptions) CreateContext(factory func() interface{}) {
-	co.factory = factory
-	co.replaced = true
-}
-
-func newContextOptions() *ContextOptions {
-	return &ContextOptions{fac, false}
-}
-
-func (composer *Composer) addMiddleware(link ChainLink) *ContextOptions {
-	contextOptions := newContextOptions()
+func (composer *Composer) addMiddleware(link ChainLink) {
 	composer.middlewareRegistry.Add(func(route *RouteModel) bool {
 		return composer.start == "" || strings.HasPrefix(route.Pattern, composer.start)
-	}, link, contextOptions)
-	return contextOptions
+	}, link)
 }
 
 func (composer *Composer) Use() *MiddlewareOptions {
@@ -52,30 +36,9 @@ func (composer *Composer) Get(pattern string, handler func(http.ResponseWriter, 
 	composer.Handle("GET", pattern, http.HandlerFunc(handler))
 }
 
-type ContextHandler interface {
-	ServeHTTP(interface{}, http.ResponseWriter, *http.Request)
-}
-
-var fac func() interface{} = func() interface{} {
-	return nil
-}
-
-func (composer *Composer) GetC(pattern string, handler ContextHandler) *ContextOptions {
-	chainHandlerFunc := ChainHandlerFunc(func(requestContext map[string]interface{}, rw http.ResponseWriter, r *http.Request) {
-		handler.ServeHTTP(requestContext["user-context"], rw, r)
-	})
-	return composer.routeRegistry.AddRoute("GET", composer.start+pattern, chainHandlerFunc)
-}
-
 func (composer *Composer) Handle(method string, pattern string, handler func(http.ResponseWriter, *http.Request)) {
 	handlerFunc := http.HandlerFunc(handler)
-	composer.routeRegistry.AddRoute(method, composer.start+pattern, wrapHandler(handlerFunc))
-}
-
-func wrapHandler(handler http.Handler) ChainHandler {
-	return ChainHandlerFunc(func(requestContext map[string]interface{}, rw http.ResponseWriter, r *http.Request) {
-		handler.ServeHTTP(rw, r)
-	})
+	composer.routeRegistry.AddRoute(method, composer.start+pattern, handlerFunc)
 }
 
 type Routes []*Route
@@ -90,19 +53,8 @@ func (composer *Composer) BuildRoutes() Routes {
 	routes := make(Routes, 0, 10)
 	for _, route := range composer.routeRegistry.Routes {
 		middleware := composer.middlewareRegistry.MiddlewareFor(route)
-		var factory func() interface{} = fac
-		if route.ContextOptions.replaced {
-			factory = route.ContextOptions.factory
-		} else {
-			for _, m := range middleware {
-				if m.ContextOptions.replaced {
-					//last one wins
-					factory = m.ContextOptions.factory
-				}
-			}
-		}
 
-		handler := build(route.Handler, middleware, factory)
+		handler := build(route.Handler, middleware)
 		routes = append(routes, &Route{route.Method, route.Pattern, handler})
 	}
 	return routes
