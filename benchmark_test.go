@@ -11,9 +11,9 @@ import (
 
 func Benchmark_Simple(b *testing.B) {
 	g := New()
-	g.Get("/simple", func(rw http.ResponseWriter, r *http.Request) {
+	g.Get("/simple", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(rw, "hello")
-	})
+	}))
 	routes := g.BuildRoutes()
 	router := httprouter.New()
 	for _, route := range routes {
@@ -43,9 +43,9 @@ func Benchmark_Middleware(b *testing.B) {
 			})
 			c.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 			})
-			c.Get("/action", func(rw http.ResponseWriter, r *http.Request) {
+			c.Get("/action", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(rw, "hello")
-			})
+			}))
 		})
 	})
 	routes := g.BuildRoutes()

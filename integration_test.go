@@ -19,21 +19,33 @@ func TestIntegratingAllThePieces(t *testing.T) {
 		g.Use().Handler(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("handlerfunc->"))
 		}))
-		g.Get("/", Index)
+		g.Get("/", http.HandlerFunc(Index))
 		g.Sub("/api", func(api *Composer) {
 			api.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 				rw.Write([]byte("api-key->"))
 			})
-			api.Get("/users/:id", func(rw http.ResponseWriter, r *http.Request) {
+			api.Get("/users/:id", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 				rw.Write([]byte("subSuccess!"))
-			})
+			}))
 			api.Sub("/admin", func(admin *Composer) {
 				admin.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
 					rw.Write([]byte("isadmin->"))
 				})
-				admin.Get("/super-important", func(rw http.ResponseWriter, r *http.Request) {
+				admin.Get("/super-important", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 					rw.Write([]byte("importantstuff!"))
-				})
+				}))
+				admin.Post("/super-important", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+					rw.Write([]byte("importantstuff!"))
+				}))
+				admin.Put("/super-important", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+					rw.Write([]byte("importantstuff!"))
+				}))
+				admin.Patch("/super-important", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+					rw.Write([]byte("importantstuff!"))
+				}))
+				admin.Delete("/super-important", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+					rw.Write([]byte("importantstuff!"))
+				}))
 			})
 		})
 		routes := g.BuildRoutes()
@@ -59,9 +71,9 @@ func TestIntegratingAllThePieces(t *testing.T) {
 func TestEndToEndWithRouter(t *testing.T) {
 	Convey("When using a routing package", t, func() {
 		g := New()
-		g.Get("/hello", func(rw http.ResponseWriter, r *http.Request) {
+		g.Get("/hello", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("Success!"))
-		})
+		}))
 		routes := g.BuildRoutes()
 		router := httprouter.New()
 		for _, route := range routes {

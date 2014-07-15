@@ -32,13 +32,28 @@ func (composer *Composer) Use() *MiddlewareOptions {
 	return &MiddlewareOptions{composer}
 }
 
-func (composer *Composer) Get(pattern string, handler func(http.ResponseWriter, *http.Request)) {
-	composer.Handle("GET", pattern, http.HandlerFunc(handler))
+func (composer *Composer) Get(pattern string, handler http.Handler) {
+	composer.Handle("GET", pattern, handler)
 }
 
-func (composer *Composer) Handle(method string, pattern string, handler func(http.ResponseWriter, *http.Request)) {
-	handlerFunc := http.HandlerFunc(handler)
-	composer.routeRegistry.AddRoute(method, composer.start+pattern, handlerFunc)
+func (composer *Composer) Post(pattern string, handler http.Handler) {
+	composer.Handle("POST", pattern, handler)
+}
+
+func (composer *Composer) Put(pattern string, handler http.Handler) {
+	composer.Handle("PUT", pattern, handler)
+}
+
+func (composer *Composer) Patch(pattern string, handler http.Handler) {
+	composer.Handle("PATCH", pattern, handler)
+}
+
+func (composer *Composer) Delete(pattern string, handler http.Handler) {
+	composer.Handle("DELETE", pattern, handler)
+}
+
+func (composer *Composer) Handle(method string, pattern string, handler http.Handler) {
+	composer.routeRegistry.AddRoute(method, composer.start+pattern, handler)
 }
 
 type Routes []*Route
