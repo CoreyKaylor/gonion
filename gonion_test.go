@@ -14,7 +14,7 @@ func TestAppInitialization(t *testing.T) {
 			g := New()
 			g.Handle("GET", "/index2", http.HandlerFunc(get_index2))
 			routes := g.BuildRoutes()
-			route := routes.routeFor("/index2")
+			route := routes.routeFor("*", "/index2")
 			recorder := httptest.NewRecorder()
 			route.Handler.ServeHTTP(recorder, new(http.Request))
 			response := recorder.Body.String()
@@ -49,7 +49,7 @@ func TestChainWrappingSemantics(t *testing.T) {
 		g.Use().ChainLink(wrapperHandler)
 		g.Handle("GET", "/index2", http.HandlerFunc(get_index2))
 		routes := g.BuildRoutes()
-		route := routes.routeFor("/index2")
+		route := routes.routeFor("*", "/index2")
 		recorder := httptest.NewRecorder()
 		route.Handler.ServeHTTP(recorder, new(http.Request))
 
@@ -58,9 +58,111 @@ func TestChainWrappingSemantics(t *testing.T) {
 	})
 }
 
-func (routes Routes) routeFor(pattern string) *Route {
+func TestMiddlewareConstraints(t *testing.T) {
+	Convey("When constraining middleware", t, func() {
+		g := New()
+		addRoute := func(method string) {
+			g.Handle(method, "/", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				rw.Write([]byte(method))
+			}))
+
+		}
+		addRoute("POST")
+		addRoute("GET")
+		addRoute("PUT")
+		addRoute("PATCH")
+		addRoute("DELETE")
+		Convey("to POST only", func() {
+			g.Only().Post().Use().Func(func(rw http.ResponseWriter, r *http.Request) {
+				rw.Write([]byte("POSTONLY"))
+			})
+			Convey("GET route should not apply middleware", func() {
+				route := g.BuildRoutes().routeFor("GET", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "GET")
+			})
+			Convey("POST route should apply middleware", func() {
+				route := g.BuildRoutes().routeFor("POST", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "POSTONLYPOST")
+			})
+		})
+		Convey("to GET only", func() {
+			g.Only().Get().Use().Func(func(rw http.ResponseWriter, r *http.Request) {
+				rw.Write([]byte("GETONLY"))
+			})
+			Convey("GET route should apply middleware", func() {
+				route := g.BuildRoutes().routeFor("GET", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "GETONLYGET")
+			})
+			Convey("POST route should not apply middleware", func() {
+				route := g.BuildRoutes().routeFor("POST", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "POST")
+			})
+		})
+		Convey("to PUT only", func() {
+			g.Only().Put().Use().Func(func(rw http.ResponseWriter, r *http.Request) {
+				rw.Write([]byte("PUTONLY"))
+			})
+			Convey("GET route should not apply middleware", func() {
+				route := g.BuildRoutes().routeFor("GET", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "GET")
+			})
+			Convey("PUT route should apply middleware", func() {
+				route := g.BuildRoutes().routeFor("PUT", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "PUTONLYPUT")
+			})
+		})
+		Convey("to PATCH only", func() {
+			g.Only().Patch().Use().Func(func(rw http.ResponseWriter, r *http.Request) {
+				rw.Write([]byte("PATCHONLY"))
+			})
+			Convey("GET route should not apply middleware", func() {
+				route := g.BuildRoutes().routeFor("GET", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "GET")
+			})
+			Convey("PATCH route should apply middleware", func() {
+				route := g.BuildRoutes().routeFor("PATCH", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "PATCHONLYPATCH")
+			})
+		})
+		Convey("to DELETE only", func() {
+			g.Only().Delete().Use().Func(func(rw http.ResponseWriter, r *http.Request) {
+				rw.Write([]byte("DELETEONLY"))
+			})
+			Convey("GET route should not apply middleware", func() {
+				route := g.BuildRoutes().routeFor("GET", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "GET")
+			})
+			Convey("DELETE route should apply middleware", func() {
+				route := g.BuildRoutes().routeFor("DELETE", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "DELETEONLYDELETE")
+			})
+		})
+	})
+}
+
+func (routes Routes) routeFor(method string, pattern string) *Route {
 	for _, r := range routes {
-		if r.Pattern == pattern {
+		if r.Pattern == pattern && (method == "*" || method == r.Method) {
 			return r
 		}
 	}

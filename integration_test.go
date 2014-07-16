@@ -51,17 +51,17 @@ func TestIntegratingAllThePieces(t *testing.T) {
 		routes := g.BuildRoutes()
 		recorder := httptest.NewRecorder()
 		Convey("Routes defined for the root path don't inherit sub-route middlware", func() {
-			route := routes.routeFor("/")
+			route := routes.routeFor("*", "/")
 			route.Handler.ServeHTTP(recorder, new(http.Request))
 			So(recorder.Body.String(), ShouldEqual, "usefunc->timeout->handlerfunc->Success!")
 		})
 		Convey("Sub-routes do inherit root middlware in addition to its own", func() {
-			route := routes.routeFor("/api/users/:id")
+			route := routes.routeFor("*", "/api/users/:id")
 			route.Handler.ServeHTTP(recorder, new(http.Request))
 			So(recorder.Body.String(), ShouldEqual, "usefunc->timeout->handlerfunc->api-key->subSuccess!")
 		})
 		Convey("Sub-Sub-routes do inherit root middlware in addition to its own", func() {
-			route := routes.routeFor("/api/admin/super-important")
+			route := routes.routeFor("*", "/api/admin/super-important")
 			route.Handler.ServeHTTP(recorder, new(http.Request))
 			So(recorder.Body.String(), ShouldEqual, "usefunc->timeout->handlerfunc->api-key->isadmin->importantstuff!")
 		})

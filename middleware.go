@@ -5,11 +5,12 @@ import (
 )
 
 type MiddlewareOptions struct {
-	composer *Composer
+	composer    *Composer
+	routeFilter func(*RouteModel) bool
 }
 
 func (mo *MiddlewareOptions) ChainLink(ctor func(http.Handler) http.Handler) {
-	mo.composer.addMiddleware(ChainLink(ctor))
+	mo.composer.addMiddleware(ChainLink(ctor), mo.routeFilter)
 }
 
 func wrap(handler http.Handler) ChainLink {
@@ -22,7 +23,7 @@ func wrap(handler http.Handler) ChainLink {
 }
 
 func (mo *MiddlewareOptions) Handler(handler http.Handler) {
-	mo.composer.addMiddleware(wrap(handler))
+	mo.composer.addMiddleware(wrap(handler), mo.routeFilter)
 }
 
 func (mo *MiddlewareOptions) Func(handler func(http.ResponseWriter, *http.Request)) {

@@ -22,14 +22,20 @@ func (composer *Composer) Sub(pattern string, sub func(*Composer)) {
 	sub(subComposer)
 }
 
-func (composer *Composer) addMiddleware(link ChainLink) {
+func (composer *Composer) addMiddleware(link ChainLink, routeFilter func(*RouteModel) bool) {
 	composer.middlewareRegistry.Add(func(route *RouteModel) bool {
-		return composer.start == "" || strings.HasPrefix(route.Pattern, composer.start)
+		return (composer.start == "" || strings.HasPrefix(route.Pattern, composer.start)) && routeFilter(route)
 	}, link)
 }
 
 func (composer *Composer) Use() *MiddlewareOptions {
-	return &MiddlewareOptions{composer}
+	return composer.useWhen(func(route *RouteModel) bool {
+		return true
+	})
+}
+
+func (composer *Composer) useWhen(routeFilter func(*RouteModel) bool) *MiddlewareOptions {
+	return &MiddlewareOptions{composer, routeFilter}
 }
 
 func (composer *Composer) Get(pattern string, handler http.Handler) {
@@ -54,6 +60,50 @@ func (composer *Composer) Delete(pattern string, handler http.Handler) {
 
 func (composer *Composer) Handle(method string, pattern string, handler http.Handler) {
 	composer.routeRegistry.AddRoute(method, composer.start+pattern, handler)
+}
+
+type RouteConstraint struct {
+	composer    *Composer
+	routeFilter func(*RouteModel) bool
+}
+
+func (composer *Composer) Only() *RouteConstraint {
+	return &RouteConstraint{composer, nil}
+}
+
+func (rc *RouteConstraint) When(routeFilter func(*RouteModel) bool) *RouteConstraint {
+	rc.routeFilter = routeFilter
+	return rc
+}
+
+func (rc *RouteConstraint) Get() *RouteConstraint {
+	return rc.methodConstraint("GET")
+}
+
+func (rc *RouteConstraint) Post() *RouteConstraint {
+	return rc.methodConstraint("POST")
+}
+
+func (rc *RouteConstraint) Put() *RouteConstraint {
+	return rc.methodConstraint("PUT")
+}
+
+func (rc *RouteConstraint) Patch() *RouteConstraint {
+	return rc.methodConstraint("PATCH")
+}
+
+func (rc *RouteConstraint) Delete() *RouteConstraint {
+	return rc.methodConstraint("DELETE")
+}
+
+func (rc *RouteConstraint) methodConstraint(method string) *RouteConstraint {
+	return rc.When(func(route *RouteModel) bool {
+		return route.Method == method
+	})
+}
+
+func (rc *RouteConstraint) Use() *MiddlewareOptions {
+	return rc.composer.useWhen(rc.routeFilter)
 }
 
 type Routes []*Route
