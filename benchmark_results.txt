@@ -1,0 +1,3 @@
+7/16/2014
+Benchmark_Simple	20000000	       123 ns/op	      14 B/op	       0 allocs/op
+Benchmark_Middleware	10000000	       177 ns/op	      14 B/op	       0 allocs/op

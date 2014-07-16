@@ -6,11 +6,7 @@ and over again Gonion stays idiomatic without the repetition and loss of express
 
 Gonion has 0 reflection dependencies and adds 0 runtime alloc's to your routes and middleware.
 
-Gonion is extremely fast!
-
-| Test | | | | |
-| Benchmark_Simple | 20000000 | 124 ns/op | 14 B/op | 0 allocs/op
-| Benchmark_Middleware | 10000000 | 180 ns/op | 14 B/op | 0 allocs/op
+Gonion is extremely [fast!](https://github.com/CoreyKaylor/gonion/blob/master/benchmark_results.txt)
 
 ## Getting Started
 
