@@ -8,8 +8,10 @@ Gonion has 0 reflection dependencies and adds 0 runtime alloc's to your routes a
 
 Gonion is extremely fast!
 
+~~~
 Benchmark_Simple			20000000		124 ns/op			14 B/op			0 allocs/op
 Benchmark_Middleware	10000000		180 ns/op			14 B/op			0 allocs/op
+~~~
 
 ## Getting Started
 
