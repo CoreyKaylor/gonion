@@ -14,11 +14,19 @@ type Composer struct {
 func New() *Composer {
 	routeRegistry := NewRouteRegistry()
 	middlewareRegistry := NewMiddlewareRegistry()
-	return &Composer{"", routeRegistry, middlewareRegistry}
+	return &Composer{
+		start:              "",
+		routeRegistry:      routeRegistry,
+		middlewareRegistry: middlewareRegistry,
+	}
 }
 
 func (composer *Composer) Sub(pattern string, sub func(*Composer)) {
-	subComposer := &Composer{composer.start + pattern, composer.routeRegistry, composer.middlewareRegistry}
+	subComposer := &Composer{
+		start:              composer.start + pattern,
+		routeRegistry:      composer.routeRegistry,
+		middlewareRegistry: composer.middlewareRegistry,
+	}
 	sub(subComposer)
 }
 
@@ -35,7 +43,10 @@ func (composer *Composer) Use() *MiddlewareOptions {
 }
 
 func (composer *Composer) useWhen(routeFilter func(*RouteModel) bool) *MiddlewareOptions {
-	return &MiddlewareOptions{composer, routeFilter}
+	return &MiddlewareOptions{
+		composer:    composer,
+		routeFilter: routeFilter,
+	}
 }
 
 func (composer *Composer) Get(pattern string, handler http.Handler) {
@@ -68,7 +79,10 @@ type RouteConstraint struct {
 }
 
 func (composer *Composer) Only() *RouteConstraint {
-	return &RouteConstraint{composer, nil}
+	return &RouteConstraint{
+		composer:    composer,
+		routeFilter: nil,
+	}
 }
 
 func (rc *RouteConstraint) When(routeFilter func(*RouteModel) bool) *RouteConstraint {
@@ -120,7 +134,19 @@ func (composer *Composer) BuildRoutes() Routes {
 		middleware := composer.middlewareRegistry.MiddlewareFor(route)
 
 		handler := build(route.Handler, middleware)
-		routes = append(routes, &Route{route.Method, route.Pattern, handler})
+		route := &Route{
+			Method:  route.Method,
+			Pattern: route.Pattern,
+			Handler: handler,
+		}
+		routes = append(routes, route)
 	}
 	return routes
+}
+
+func (composer *Composer) EachRoute(router func(*Route)) {
+	routes := composer.BuildRoutes()
+	for _, route := range routes {
+		router(route)
+	}
 }

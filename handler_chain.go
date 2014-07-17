@@ -26,13 +26,19 @@ type RouteModel struct {
 }
 
 func (r *RouteRegistry) AddRoute(method string, pattern string, handler http.Handler) {
-	route := &RouteModel{method, pattern, handler}
+	route := &RouteModel{
+		Method:  method,
+		Pattern: pattern,
+		Handler: handler,
+	}
 	r.Routes = append(r.Routes, route)
 }
 
 //Creates a new RouteRegistry for storing route information
 func NewRouteRegistry() *RouteRegistry {
-	return &RouteRegistry{make([]*RouteModel, 0, 10)}
+	return &RouteRegistry{
+		Routes: make([]*RouteModel, 0, 10),
+	}
 }
 
 type MiddlewareRegistry struct {
@@ -47,7 +53,9 @@ type Middleware struct {
 type RouteFilter func(*RouteModel) bool
 
 func NewMiddlewareRegistry() *MiddlewareRegistry {
-	return &MiddlewareRegistry{make([]*Middleware, 0, 10)}
+	return &MiddlewareRegistry{
+		Middleware: make([]*Middleware, 0, 10),
+	}
 }
 
 func (m *MiddlewareRegistry) AppliesToAllRoutes(handler ChainLink) {
@@ -57,7 +65,11 @@ func (m *MiddlewareRegistry) AppliesToAllRoutes(handler ChainLink) {
 }
 
 func (m *MiddlewareRegistry) Add(filter RouteFilter, handler ChainLink) {
-	m.Middleware = append(m.Middleware, &Middleware{filter, handler})
+	middleware := &Middleware{
+		Filter:  filter,
+		Handler: handler,
+	}
+	m.Middleware = append(m.Middleware, middleware)
 }
 
 func (m *MiddlewareRegistry) MiddlewareFor(route *RouteModel) []*Middleware {

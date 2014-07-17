@@ -74,13 +74,12 @@ func TestEndToEndWithRouter(t *testing.T) {
 		g.Get("/hello", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Write([]byte("Success!"))
 		}))
-		routes := g.BuildRoutes()
 		router := httprouter.New()
-		for _, route := range routes {
+		g.EachRoute(func(route *Route) {
 			router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, m map[string]string) {
 				route.Handler.ServeHTTP(rw, r)
 			})
-		}
+		})
 		recorder := httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", "/hello", nil)
 		router.ServeHTTP(recorder, request)
