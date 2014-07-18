@@ -9,17 +9,23 @@ import (
 	"strings"
 )
 
+//Recovery is a an http.Handler that only reports a 500 status code
+//without rendering the stacktrace.
 type Recovery struct {
 }
 
+//RecoveryWithStackTrace is intended for development and renders
+//a stacktrace of where the panic occurred.
 type RecoveryWithStackTrace struct {
 	template *template.Template
 }
 
+//NewRecovery is a factory method for Recovery
 func NewRecovery() *Recovery {
 	return &Recovery{}
 }
 
+//NewRecoveryWithStackTrace is a factory method for RecoveryWithStackTrace
 func NewRecoveryWithStackTrace() *RecoveryWithStackTrace {
 	return &RecoveryWithStackTrace{
 		template: createErrorTemplate(),
@@ -47,6 +53,8 @@ type panicError struct {
 	StackTrace   string
 }
 
+//ServeHTTP is the implementation of the standard http.Handler interface
+//that will render a stacktrace.
 func (recovery *RecoveryWithStackTrace) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Handler) {
 	handlePanic(func(err interface{}) {
 		stack := debug.Stack()
@@ -57,6 +65,8 @@ func (recovery *RecoveryWithStackTrace) ServeHTTP(rw http.ResponseWriter, r *htt
 	}, next, rw, r)
 }
 
+//ServeHTTP is the implementation of the standard http.Handler interface
+//that will only report a Internal Server Error
 func (recovery *Recovery) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Handler) {
 	handlePanic(func(err interface{}) {
 		rw.WriteHeader(http.StatusInternalServerError)

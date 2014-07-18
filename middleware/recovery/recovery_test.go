@@ -1,18 +1,19 @@
 package recovery
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
-var panicHandler http.Handler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+var panicHandler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 	panic("oh no!")
 })
 
-var noPanicHandler http.Handler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+var noPanicHandler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 })
 
 func TestRecoveryWithStackTrace(t *testing.T) {
