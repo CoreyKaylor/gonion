@@ -12,7 +12,7 @@ func TestAppInitialization(t *testing.T) {
 	Convey("When building the routes", t, func() {
 		Convey("The route handler is built", func() {
 			g := New()
-			g.Handle("GET", "/index2", http.HandlerFunc(get_index2))
+			g.Handle("GET", "/index2", http.HandlerFunc(getIndex2))
 			routes := g.BuildRoutes()
 			route := routes.routeFor("*", "/index2")
 			recorder := httptest.NewRecorder()
@@ -47,7 +47,7 @@ func TestChainWrappingSemantics(t *testing.T) {
 		})
 		g.Use().ChainLink(wrapperHandler)
 		g.Use().ChainLink(wrapperHandler)
-		g.Handle("GET", "/index2", http.HandlerFunc(get_index2))
+		g.Handle("GET", "/index2", http.HandlerFunc(getIndex2))
 		routes := g.BuildRoutes()
 		route := routes.routeFor("*", "/index2")
 		recorder := httptest.NewRecorder()
@@ -169,6 +169,6 @@ func (routes Routes) routeFor(method string, pattern string) *Route {
 	return nil
 }
 
-func get_index2(rw http.ResponseWriter, r *http.Request) {
+func getIndex2(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("Success!"))
 }

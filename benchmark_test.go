@@ -9,7 +9,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func Benchmark_Simple(b *testing.B) {
+func BenchmarkSimple(b *testing.B) {
 	g := New()
 	g.Get("/simple", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(rw, "hello")
@@ -31,7 +31,7 @@ func Benchmark_Simple(b *testing.B) {
 	}
 }
 
-func Benchmark_Middleware(b *testing.B) {
+func BenchmarkMiddleware(b *testing.B) {
 	g := New()
 	g.Sub("/a", func(a *Composer) {
 		a.Use().Func(func(rw http.ResponseWriter, r *http.Request) {
