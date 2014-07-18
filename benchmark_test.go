@@ -17,7 +17,7 @@ func Benchmark_Simple(b *testing.B) {
 	routes := g.BuildRoutes()
 	router := httprouter.New()
 	for _, route := range routes {
-		router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, m map[string]string) {
+		router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, params httprouter.Params) {
 			route.Handler.ServeHTTP(rw, r)
 		})
 	}
@@ -51,7 +51,7 @@ func Benchmark_Middleware(b *testing.B) {
 	routes := g.BuildRoutes()
 	router := httprouter.New()
 	for _, route := range routes {
-		router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, m map[string]string) {
+		router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, params httprouter.Params) {
 			route.Handler.ServeHTTP(rw, r)
 		})
 	}

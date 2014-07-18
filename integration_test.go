@@ -76,7 +76,7 @@ func TestEndToEndWithRouter(t *testing.T) {
 		}))
 		router := httprouter.New()
 		g.EachRoute(func(route *Route) {
-			router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, m map[string]string) {
+			router.Handle(route.Method, route.Pattern, func(rw http.ResponseWriter, r *http.Request, params httprouter.Params) {
 				route.Handler.ServeHTTP(rw, r)
 			})
 		})
