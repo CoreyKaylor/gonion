@@ -1,6 +1,7 @@
 # Gonion
 [![Build Status](https://travis-ci.org/CoreyKaylor/gonion.png)](https://travis-ci.org/CoreyKaylor/gonion)
 [![GoDoc](https://godoc.org/github.com/CoreyKaylor/gonion?status.svg)](http://godoc.org/github.com/CoreyKaylor/gonion)
+[![Coverage Status](https://coveralls.io/repos/CoreyKaylor/gonion/badge.png?branch=master)](https://coveralls.io/r/CoreyKaylor/gonion?branch=master)
 
 Gonion is a library for composing your routes and middleware. It is NOT a full-fledged framework, but rather allows you to compose
 things in a similar way that a framework might provide. Even though "idiomatic" go seems to encourage repeating yourself over
