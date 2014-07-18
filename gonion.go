@@ -9,14 +9,14 @@ import (
 //composing the middleware and routes of your application
 type Composer struct {
 	start              string
-	routeRegistry      *RouteRegistry
-	middlewareRegistry *MiddlewareRegistry
+	routeRegistry      *routeRegistry
+	middlewareRegistry *middlewareRegistry
 }
 
 //New is a factory method for Composer
 func New() *Composer {
-	routeRegistry := NewRouteRegistry()
-	middlewareRegistry := NewMiddlewareRegistry()
+	routeRegistry := newRouteRegistry()
+	middlewareRegistry := newMiddlewareRegistry()
 	return &Composer{
 		start:              "",
 		routeRegistry:      routeRegistry,
@@ -37,7 +37,7 @@ func (composer *Composer) Sub(pattern string, sub func(*Composer)) {
 }
 
 func (composer *Composer) addMiddleware(link ChainLink, routeFilter func(*RouteModel) bool) {
-	composer.middlewareRegistry.Add(func(route *RouteModel) bool {
+	composer.middlewareRegistry.add(func(route *RouteModel) bool {
 		return (composer.start == "" || strings.HasPrefix(route.Pattern, composer.start)) && routeFilter(route)
 	}, link)
 }
@@ -83,7 +83,7 @@ func (composer *Composer) Delete(pattern string, handler http.Handler) {
 
 //Handle adds a route for the specified method and pattern
 func (composer *Composer) Handle(method string, pattern string, handler http.Handler) {
-	composer.routeRegistry.AddRoute(method, composer.start+pattern, handler)
+	composer.routeRegistry.addRoute(method, composer.start+pattern, handler)
 }
 
 //RouteConstraint is how middleware is constrained after calling Only()
@@ -162,8 +162,8 @@ type Route struct {
 //you have chosen for your application.
 func (composer *Composer) BuildRoutes() Routes {
 	routes := make(Routes, 0, 10)
-	for _, route := range composer.routeRegistry.Routes {
-		middleware := composer.middlewareRegistry.MiddlewareFor(route)
+	for _, route := range composer.routeRegistry.routes {
+		middleware := composer.middlewareRegistry.middlewareFor(route)
 
 		handler := build(route.Handler, middleware)
 		route := &Route{

@@ -4,78 +4,80 @@ import (
 	"net/http"
 )
 
+//ChainLink is used when your http.Handler needs to wrap the rest
+//of the handler chain.
 type ChainLink func(http.Handler) http.Handler
 
-func build(handler http.Handler, middleware []*Middleware) http.Handler {
+func build(handler http.Handler, middleware []*middleware) http.Handler {
 	chain := handler
 	for i := len(middleware) - 1; i >= 0; i-- {
-		chain = middleware[i].Handler(chain)
+		chain = middleware[i].handler(chain)
 	}
 	return chain
 }
 
-//Storage for route information
-type RouteRegistry struct {
-	Routes []*RouteModel
+type routeRegistry struct {
+	routes []*RouteModel
 }
 
+//RouteModel is the pre-build model representing a single handler
+//without middleware.
 type RouteModel struct {
 	Method  string
 	Pattern string
 	Handler http.Handler
 }
 
-func (r *RouteRegistry) AddRoute(method string, pattern string, handler http.Handler) {
+func (r *routeRegistry) addRoute(method string, pattern string, handler http.Handler) {
 	route := &RouteModel{
 		Method:  method,
 		Pattern: pattern,
 		Handler: handler,
 	}
-	r.Routes = append(r.Routes, route)
+	r.routes = append(r.routes, route)
 }
 
-//Creates a new RouteRegistry for storing route information
-func NewRouteRegistry() *RouteRegistry {
-	return &RouteRegistry{
-		Routes: make([]*RouteModel, 0, 10),
+func newRouteRegistry() *routeRegistry {
+	return &routeRegistry{
+		routes: make([]*RouteModel, 0, 10),
 	}
 }
 
-type MiddlewareRegistry struct {
-	Middleware []*Middleware
+type middlewareRegistry struct {
+	middleware []*middleware
 }
 
-type Middleware struct {
-	Filter  RouteFilter
-	Handler ChainLink
+type middleware struct {
+	filter  routeFilter
+	handler ChainLink
 }
 
-type RouteFilter func(*RouteModel) bool
+type routeFilter func(*RouteModel) bool
 
-func NewMiddlewareRegistry() *MiddlewareRegistry {
-	return &MiddlewareRegistry{
-		Middleware: make([]*Middleware, 0, 10),
+func newMiddlewareRegistry() *middlewareRegistry {
+	return &middlewareRegistry{
+		middleware: make([]*middleware, 0, 10),
 	}
 }
 
-func (m *MiddlewareRegistry) AppliesToAllRoutes(handler ChainLink) {
-	m.Add(func(route *RouteModel) bool {
+func (m *middlewareRegistry) appliesToAllRoutes(handler ChainLink) {
+	m.add(func(route *RouteModel) bool {
 		return true
 	}, handler)
 }
 
-func (m *MiddlewareRegistry) Add(filter RouteFilter, handler ChainLink) {
-	middleware := &Middleware{
-		Filter:  filter,
-		Handler: handler,
+func (m *middlewareRegistry) add(filter routeFilter, handler ChainLink) {
+	middleware := &middleware{
+		filter:  filter,
+		handler: handler,
 	}
-	m.Middleware = append(m.Middleware, middleware)
+	m.middleware = append(m.middleware, middleware)
 }
 
-func (m *MiddlewareRegistry) MiddlewareFor(route *RouteModel) []*Middleware {
-	ret := make([]*Middleware, 0, 10)
-	for _, middle := range m.Middleware {
-		if middle.Filter(route) {
+func (m *middlewareRegistry) middlewareFor(route *RouteModel) []*middleware {
+	ret := make([]*middleware, 0, 10)
+	for _, middle := range m.middleware {
+		if middle.filter(route) {
 			ret = append(ret, middle)
 		}
 	}

@@ -9,8 +9,8 @@ import (
 
 func TestMiddlewareRegistry(t *testing.T) {
 	Convey("When registering middleware for all routes", t, func() {
-		m := NewMiddlewareRegistry()
-		m.AppliesToAllRoutes(func(http.Handler) http.Handler {
+		m := newMiddlewareRegistry()
+		m.appliesToAllRoutes(func(http.Handler) http.Handler {
 			return nil
 		})
 		Convey("It should return true always", func() {
@@ -19,7 +19,7 @@ func TestMiddlewareRegistry(t *testing.T) {
 				routes = append(routes, &RouteModel{})
 			}
 			for i := 0; i < 5; i++ {
-				warez := m.MiddlewareFor(routes[i])
+				warez := m.middlewareFor(routes[i])
 				if len(warez) != 1 {
 					t.FailNow()
 				}
