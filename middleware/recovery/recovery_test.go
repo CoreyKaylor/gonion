@@ -20,9 +20,9 @@ func TestRecoveryWithStackTrace(t *testing.T) {
 	Convey("When using recovery with stacktrace", t, func() {
 		Convey("And a panic occurs", func() {
 			Convey("Recovery should include the stacktrace", func() {
-				recovery := NewRecoveryWithStackTrace()
+				recovery := RecoveryWithStackTrace(panicHandler)
 				recorder := httptest.NewRecorder()
-				recovery.ServeHTTP(recorder, new(http.Request), panicHandler)
+				recovery.ServeHTTP(recorder, new(http.Request))
 				body := recorder.Body.String()
 				Convey("With a status code of InternalServerError", func() {
 					So(recorder.Code, ShouldEqual, http.StatusInternalServerError)
@@ -38,9 +38,9 @@ func TestRecoveryWithStackTrace(t *testing.T) {
 			})
 		})
 		Convey("No panic occurs", func() {
-			recovery := NewRecoveryWithStackTrace()
+			recovery := RecoveryWithStackTrace(noPanicHandler)
 			recorder := httptest.NewRecorder()
-			recovery.ServeHTTP(recorder, new(http.Request), noPanicHandler)
+			recovery.ServeHTTP(recorder, new(http.Request))
 			body := recorder.Body.String()
 			Convey("Status code should be OK", func() {
 				So(recorder.Code, ShouldEqual, http.StatusOK)
@@ -57,9 +57,9 @@ func TestStandardRecovery(t *testing.T) {
 	Convey("When using standard recovery", t, func() {
 		Convey("And a panic occurs", func() {
 			Convey("Recovery should", func() {
-				recovery := NewRecovery()
+				recovery := Recovery(panicHandler)
 				recorder := httptest.NewRecorder()
-				recovery.ServeHTTP(recorder, new(http.Request), panicHandler)
+				recovery.ServeHTTP(recorder, new(http.Request))
 				body := recorder.Body.String()
 				Convey("Have a status code of InternalServerError", func() {
 					So(recorder.Code, ShouldEqual, http.StatusInternalServerError)
@@ -74,9 +74,9 @@ func TestStandardRecovery(t *testing.T) {
 			})
 		})
 		Convey("No panic occurs", func() {
-			recovery := NewRecoveryWithStackTrace()
+			recovery := RecoveryWithStackTrace(noPanicHandler)
 			recorder := httptest.NewRecorder()
-			recovery.ServeHTTP(recorder, new(http.Request), noPanicHandler)
+			recovery.ServeHTTP(recorder, new(http.Request))
 			body := recorder.Body.String()
 			Convey("Status code should be OK", func() {
 				So(recorder.Code, ShouldEqual, http.StatusOK)

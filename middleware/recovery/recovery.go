@@ -9,27 +9,33 @@ import (
 	"strings"
 )
 
-//Recovery is a an http.Handler that only reports a 500 status code
+//SimpleRecovery is a an http.Handler that only reports a 500 status code
 //without rendering the stacktrace.
-type Recovery struct {
+type SimpleRecovery struct {
 }
 
-//RecoveryWithStackTrace is intended for development and renders
+//StackTraceRecovery is intended for development and renders
 //a stacktrace of where the panic occurred.
-type RecoveryWithStackTrace struct {
+type StackTraceRecovery struct {
 	template *template.Template
 }
 
-//NewRecovery is a factory method for Recovery
-func NewRecovery() *Recovery {
-	return &Recovery{}
+//Recovery is a factory method for SimpleRecovery
+func Recovery(inner http.Handler) http.Handler {
+	recovery := &SimpleRecovery{}
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		recovery.ServeHTTP(rw, r, inner)
+	})
 }
 
-//NewRecoveryWithStackTrace is a factory method for RecoveryWithStackTrace
-func NewRecoveryWithStackTrace() *RecoveryWithStackTrace {
-	return &RecoveryWithStackTrace{
+//RecoveryWithStackTrace is a factory method for RecoveryWithStackTrace
+func RecoveryWithStackTrace(inner http.Handler) http.Handler {
+	recovery := &StackTraceRecovery{
 		template: createErrorTemplate(),
 	}
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		recovery.ServeHTTP(rw, r, inner)
+	})
 }
 
 func createErrorTemplate() *template.Template {
@@ -55,7 +61,7 @@ type panicError struct {
 
 //ServeHTTP is the implementation of the standard http.Handler interface
 //that will render a stacktrace.
-func (recovery *RecoveryWithStackTrace) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Handler) {
+func (recovery *StackTraceRecovery) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Handler) {
 	handlePanic(func(err interface{}) {
 		stack := debug.Stack()
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -67,7 +73,7 @@ func (recovery *RecoveryWithStackTrace) ServeHTTP(rw http.ResponseWriter, r *htt
 
 //ServeHTTP is the implementation of the standard http.Handler interface
 //that will only report a Internal Server Error
-func (recovery *Recovery) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Handler) {
+func (recovery *SimpleRecovery) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Handler) {
 	handlePanic(func(err interface{}) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		rw.Write([]byte("Internal Server Error"))
