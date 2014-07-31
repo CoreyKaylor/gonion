@@ -157,6 +157,26 @@ func TestMiddlewareConstraints(t *testing.T) {
 				So(recorder.Body.String(), ShouldEqual, "DELETEONLYDELETE")
 			})
 		})
+		Convey("to arbitrary condition", func() {
+			g.Only().When(func() bool {
+				return false
+			}).Use().Func(func(rw http.ResponseWriter, r *http.Request) {
+				rw.Write([]byte("nada"))
+			})
+			Convey("GET route should not apply middleware", func() {
+				route := g.BuildRoutes().routeFor("GET", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "GET")
+			})
+			Convey("DELETE route should not apply middleware", func() {
+				route := g.BuildRoutes().routeFor("DELETE", "/")
+				recorder := httptest.NewRecorder()
+				route.Handler.ServeHTTP(recorder, nil)
+				So(recorder.Body.String(), ShouldEqual, "DELETE")
+			})
+		})
+
 	})
 }
 
