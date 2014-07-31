@@ -102,10 +102,17 @@ func (composer *Composer) Only() *RouteConstraint {
 	}
 }
 
-//When is a constraint that gives you all the route information to filter upon.
-func (rc *RouteConstraint) When(routeFilter func(*RouteModel) bool) *RouteConstraint {
+//WhenRouteMatches is a constraint that gives you all the route information to filter upon.
+func (rc *RouteConstraint) WhenRouteMatches(routeFilter func(*RouteModel) bool) *RouteConstraint {
 	rc.routeFilter = routeFilter
 	return rc
+}
+
+//When is a constraint that gives you the option to only apply upon a condition being true
+func (rc *RouteConstraint) When(condition func() bool) *RouteConstraint {
+	return rc.WhenRouteMatches(func(r *RouteModel) bool {
+		return condition()
+	})
 }
 
 //Get constrains the middleware to only apply for 'GET' requests
@@ -134,7 +141,7 @@ func (rc *RouteConstraint) Delete() *RouteConstraint {
 }
 
 func (rc *RouteConstraint) methodConstraint(method string) *RouteConstraint {
-	return rc.When(func(route *RouteModel) bool {
+	return rc.WhenRouteMatches(func(route *RouteModel) bool {
 		return route.Method == method
 	})
 }
@@ -162,16 +169,17 @@ type Route struct {
 //you have chosen for your application.
 func (composer *Composer) BuildRoutes() Routes {
 	routes := make(Routes, 0, 10)
-	for _, route := range composer.routeRegistry.routes {
+	for i := len(composer.routeRegistry.routes) - 1; i >= 0; i-- {
+		route := composer.routeRegistry.routes[i]
 		middleware := composer.middlewareRegistry.middlewareFor(route)
 
 		handler := build(route.Handler, middleware)
-		route := &Route{
+		builtRoute := &Route{
 			Method:  route.Method,
 			Pattern: route.Pattern,
 			Handler: handler,
 		}
-		routes = append(routes, route)
+		routes = append(routes, builtRoute)
 	}
 	return routes
 }
