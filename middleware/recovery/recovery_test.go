@@ -20,7 +20,7 @@ func TestRecoveryWithStackTrace(t *testing.T) {
 	Convey("When using recovery with stacktrace", t, func() {
 		Convey("And a panic occurs", func() {
 			Convey("Recovery should include the stacktrace", func() {
-				recovery := RecoveryWithStackTrace(panicHandler)
+				recovery := WithStackTrace(panicHandler)
 				recorder := httptest.NewRecorder()
 				recovery.ServeHTTP(recorder, new(http.Request))
 				body := recorder.Body.String()
@@ -38,7 +38,7 @@ func TestRecoveryWithStackTrace(t *testing.T) {
 			})
 		})
 		Convey("No panic occurs", func() {
-			recovery := RecoveryWithStackTrace(noPanicHandler)
+			recovery := WithStackTrace(noPanicHandler)
 			recorder := httptest.NewRecorder()
 			recovery.ServeHTTP(recorder, new(http.Request))
 			body := recorder.Body.String()
@@ -74,7 +74,7 @@ func TestStandardRecovery(t *testing.T) {
 			})
 		})
 		Convey("No panic occurs", func() {
-			recovery := RecoveryWithStackTrace(noPanicHandler)
+			recovery := WithStackTrace(noPanicHandler)
 			recorder := httptest.NewRecorder()
 			recovery.ServeHTTP(recorder, new(http.Request))
 			body := recorder.Body.String()

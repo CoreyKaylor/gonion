@@ -28,8 +28,8 @@ func Recovery(inner http.Handler) http.Handler {
 	})
 }
 
-//RecoveryWithStackTrace is a factory method for RecoveryWithStackTrace
-func RecoveryWithStackTrace(inner http.Handler) http.Handler {
+//WithStackTrace is a factory method for RecoveryWithStackTrace
+func WithStackTrace(inner http.Handler) http.Handler {
 	recovery := &StackTraceRecovery{
 		template: createErrorTemplate(),
 	}
