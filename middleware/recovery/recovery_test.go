@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 var panicHandler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -16,75 +16,38 @@ var panicHandler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request
 var noPanicHandler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 })
 
-func TestRecoveryWithStackTrace(t *testing.T) {
-	Convey("When using recovery with stacktrace", t, func() {
-		Convey("And a panic occurs", func() {
-			Convey("Recovery should include the stacktrace", func() {
-				recovery := WithStackTrace(panicHandler)
-				recorder := httptest.NewRecorder()
-				recovery.ServeHTTP(recorder, new(http.Request))
-				body := recorder.Body.String()
-				Convey("With a status code of InternalServerError", func() {
-					So(recorder.Code, ShouldEqual, http.StatusInternalServerError)
-				})
-				Convey("body should contain the stacktrace", func() {
-					containsStackTraceClass := strings.Contains(body, "class=\"stacktrace\"")
-					So(containsStackTraceClass, ShouldBeTrue)
-				})
-				Convey("body should contain the panic error message", func() {
-					containsPanicMessage := strings.Contains(body, "oh no!")
-					So(containsPanicMessage, ShouldBeTrue)
-				})
-			})
-		})
-		Convey("No panic occurs", func() {
-			recovery := WithStackTrace(noPanicHandler)
-			recorder := httptest.NewRecorder()
-			recovery.ServeHTTP(recorder, new(http.Request))
-			body := recorder.Body.String()
-			Convey("Status code should be OK", func() {
-				So(recorder.Code, ShouldEqual, http.StatusOK)
-			})
-			Convey("body should NOT contain any stacktrace", func() {
-				containsStackTraceClass := strings.Contains(body, "class=\"stacktrace\"")
-				So(containsStackTraceClass, ShouldBeFalse)
-			})
-		})
-	})
+func TestRecoveryWithStackTrace_WithPanic(t *testing.T) {
+	recovery := WithStackTrace(panicHandler)
+	recorder := httptest.NewRecorder()
+	recovery.ServeHTTP(recorder, new(http.Request))
+	body := recorder.Body.String()
+	assert.Equal(t, recorder.Code, http.StatusInternalServerError)
+	assert.True(t, strings.Contains(body, "class=\"stacktrace\""))
+	assert.True(t, strings.Contains(body, "oh no!"))
 }
 
-func TestStandardRecovery(t *testing.T) {
-	Convey("When using standard recovery", t, func() {
-		Convey("And a panic occurs", func() {
-			Convey("Recovery should", func() {
-				recovery := Recovery(panicHandler)
-				recorder := httptest.NewRecorder()
-				recovery.ServeHTTP(recorder, new(http.Request))
-				body := recorder.Body.String()
-				Convey("Have a status code of InternalServerError", func() {
-					So(recorder.Code, ShouldEqual, http.StatusInternalServerError)
-				})
-				Convey("body should NOT contain the stacktrace", func() {
-					containsStackTraceClass := strings.Contains(body, "class=\"stacktrace\"")
-					So(containsStackTraceClass, ShouldBeFalse)
-				})
-				Convey("body should have text Internal Server Error", func() {
-					So(body, ShouldEqual, "Internal Server Error")
-				})
-			})
-		})
-		Convey("No panic occurs", func() {
-			recovery := WithStackTrace(noPanicHandler)
-			recorder := httptest.NewRecorder()
-			recovery.ServeHTTP(recorder, new(http.Request))
-			body := recorder.Body.String()
-			Convey("Status code should be OK", func() {
-				So(recorder.Code, ShouldEqual, http.StatusOK)
-			})
-			Convey("body should NOT contain any stacktrace", func() {
-				containsStackTraceClass := strings.Contains(body, "class=\"stacktrace\"")
-				So(containsStackTraceClass, ShouldBeFalse)
-			})
-		})
-	})
+func TestRecoveryWithStackTrace_WithoutPanic(t *testing.T) {
+	recovery := WithStackTrace(noPanicHandler)
+	recorder := httptest.NewRecorder()
+	recovery.ServeHTTP(recorder, new(http.Request))
+	assert.Equal(t, recorder.Code, http.StatusOK)
+	assert.False(t, strings.Contains(recorder.Body.String(), "class=\"stacktrace\""))
+}
+
+func TestStandardRecovery_WithPanic(t *testing.T) {
+	recovery := Recovery(panicHandler)
+	recorder := httptest.NewRecorder()
+	recovery.ServeHTTP(recorder, new(http.Request))
+	body := recorder.Body.String()
+	assert.Equal(t, recorder.Code, http.StatusInternalServerError)
+	assert.False(t, strings.Contains(body, "class=\"stacktrace\""))
+	assert.Equal(t, body, "Internal Server Error")
+}
+
+func TestStandardRecovery_WithoutPanic(t *testing.T) {
+	recovery := Recovery(noPanicHandler)
+	recorder := httptest.NewRecorder()
+	recovery.ServeHTTP(recorder, new(http.Request))
+	assert.Equal(t, recorder.Code, http.StatusOK)
+	assert.False(t, strings.Contains(recorder.Body.String(), "class=\"stacktrace\""))
 }
