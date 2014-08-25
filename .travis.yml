@@ -11,8 +11,9 @@ before_install:
 install:
     - go get github.com/jacobsa/ogletest
     - go get github.com/jacobsa/oglematchers
-    - go get github.com/smartystreets/goconvey
+    - go get github.com/stretchr/testify    
     - go get github.com/julienschmidt/httprouter
+
 
 script:
       - $HOME/gopath/bin/goveralls -repotoken JAGOu8XbQMyiisbkgvhfw7pf2G6Mir4C9
